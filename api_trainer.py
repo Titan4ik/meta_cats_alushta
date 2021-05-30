@@ -71,7 +71,7 @@ def get_model(x_train,y_train,x_test,y_test):
     history = model.fit(x_train,y_train,validation_data=(x_test,y_test), epochs=1)
     return model, history
 
-def start(dataset_name, new_data_, df, col,st_date, end1_dt, end2_dt,day_count=10):
+def start(dataset_name, new_data_, df, col,st_date, end1_dt, end2_dt,day_count=30):
     new_data = pd.DataFrame(index=range(0,len(df)),columns=[col])
     for j, val in enumerate(new_data_[col]):
         new_data[col][j] = val
@@ -108,14 +108,16 @@ def start(dataset_name, new_data_, df, col,st_date, end1_dt, end2_dt,day_count=1
 
     res = []
     values = []
+    values_t = []
     for x1, x2 in zip(y_pred[0],new_data[int(df.shape[0]*0.8):][col].values):
         if np.isnan(x1) or np.isnan(x2):
             continue
         values.append(abs(x1-x2))
+        values_t.append(abs(x2))
     for  k in [3,10,30,90,120,180,240, 300,360]:
         in_days = k * 8
-        testScore = sum(values[:in_days]) / in_days
-        res.append((k, testScore))
+        testScore = (sum(values[:in_days]) / in_days) / (sum(values_t[:in_days]) / in_days)
+        res.append((k, testScore * 100))
         print(f'Diff in {col} for {k} days: {testScore}')
     draw_info(dataset_name, col, res)
     return res
@@ -125,12 +127,12 @@ def draw_info(dataset_name, name, values):
 
  
 
-    lab= f"Размер погрешности предикта для {name} с течением времени"
+    lab= f"Относительная погрешность предикта для {name} с течением времени"
     plt.title(label=lab)
     ax.set_xlabel('кол-во дней')
-    ax.set_ylabel('DIFF')
+    ax.set_ylabel('%')
 
-    plt.plot([x[0] for x in values], [x[1] for x in values], color='forestgreen',label="Разница между предиктом и факт. значением")
+    plt.plot([x[0] for x in values], [x[1] for x in values], linewidth=6, color='forestgreen',label="Разница между предиктом и факт. значением")
 
 
     plt.legend()
@@ -141,19 +143,19 @@ def draw_info(dataset_name, name, values):
 def draw(dataset_name, name, start_dt_test,  step, train, test, predict):
     fig, ax = plt.subplots()
     print(f'-----{name}-----')
-    y_train = [
-        start_dt_test - step * i
-        for i in range(len(train))
-    ][::-1]
+    # y_train = [
+    #     start_dt_test - step * i
+    #     for i in range(len(train))
+    # ][::-1]
 
     y_test = [
         start_dt_test + step * i
         for i in range(len(test))
     ]
 
-    ax.plot(y_train, [x for x in train], color='seagreen',label="train")
-    ax.plot(y_test, [x for x in test], color='forestgreen', label="test")
-    ax.plot(y_test, [x for x in predict], color='coral', label="predict")
+    # ax.plot(y_train, [x for x in train], linewidth=6, color='seagreen',label="train")
+    ax.plot(y_test, [x for x in test], linewidth=6, color='darkgreen', label="test")
+    ax.plot(y_test, [x for x in predict], linewidth=6, color='brown', label="predict")
     ax.set_xlabel('Дата')
     ax.set_ylabel(name)
     ax.xaxis_date()

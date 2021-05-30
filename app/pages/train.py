@@ -7,7 +7,7 @@ from datetime import datetime
 from io import BytesIO
 import time
 import json
-from api_trainer import run
+
 import threading
 
 def app():
@@ -38,6 +38,7 @@ def app():
         df = _save_dataset(station_name, dataset)
         if df:
             st.info('Сохранено')
+            from api_trainer import run
             t1 = threading.Thread(target=run, args=(station_name,))
             t1.start()
             print(f'start train {station_name}')

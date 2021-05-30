@@ -7,6 +7,8 @@ from datetime import datetime
 from io import BytesIO
 import time
 import json
+from api_trainer import run
+import threading
 
 def app():
     st.markdown(
@@ -16,8 +18,9 @@ def app():
     )
 
     df = pd.DataFrame(
-        np.random.randn(3, 7),
-        columns=('col %d' % i for i in range(7)))
+        columns=(["timestamp",  "T",  "Po",  "U",  "DD",  "Ff"])).set_index('timestamp', drop=False)
+    df.loc[0] = ["30.05.2021 00:00", "17.9",  "749.8",  "94",  "Ветер, дующий с северо-востока",  "1"]
+    df.loc[1] = ["29.05.2021 21:00", "19.1",  "748.9",  "86",  "Ветер, дующий с востоко-северо-востока",  "2"]
     
     st.dataframe(df)
 
@@ -33,11 +36,15 @@ def app():
     
     if train_button:
         df = _save_dataset(station_name, dataset)
-        if df is not None:
+        if df:
             st.info('Сохранено')
+            t1 = threading.Thread(target=run, args=(station_name,))
+            t1.start()
+            print(f'start train {station_name}')
             time.sleep(1)
             session_state.subpage = None
             st.experimental_rerun()
+            
 
 
 def _save_dataset(station_name, uploaded_file):
@@ -51,26 +58,10 @@ def _save_dataset(station_name, uploaded_file):
     
     path = Path(f'data/datasets/csv/{station_name}.csv')
     path.parent.mkdir(exist_ok=True)
+    
+    with open(path,'wb') as out:
+        data = uploaded_file.read()
+        out.write(BytesIO(data).read())
 
-    data = uploaded_file.read()
-    try:
-        df = pd.read_csv(BytesIO(data), sep="\t", encoding='utf-8')
-    except Exception as e:
-        st.error('Dataset должен соответсвовать формату')
-        return None
-        
-    column = {'published', 'domain'}
-    if not column.issubset(df.columns):
-        st.error('Данные dataset\'a не соответсувуют формату')
-        return None
-
-    df.to_csv(path, sep='\t', encoding='utf-8')
-
-    path_meta = Path(f'data/datasets/meta/{station_name}.meta.json')
-    path_meta.parent.mkdir(exist_ok=True)
-    with open(path_meta, 'w') as f:
-        meta = {'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                'row_counts': df.shape[0]}
-        f.write(json.dumps(meta))
-
-    return df
+    
+    return True

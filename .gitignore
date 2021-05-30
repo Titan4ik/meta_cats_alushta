@@ -7,6 +7,11 @@ __pycache__/
 *.so
 *.json
 *.csv
+*.png
+*.pkl
+*.pb
+*.index
+*.jpg
 # Distribution / packaging
 .Python
 build/

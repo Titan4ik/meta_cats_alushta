@@ -27,16 +27,15 @@ with open('tmp.csv', 'r', encoding='utf-8') as fin:
         read = csv.reader(fin)
         wr = csv.writer(fout)
         for i, row in enumerate(read):
-
             if i == 0:
                 wr.writerow(row)
             else:
-                for i in range(1,8):
+                for i in range(1,6):
                     if not row[i] and prev_row is not None:
                         row[i] = prev_row[i]
                     elif not row[i]:
                         row[i] = 0
-                    if i == 6:
+                    if i == 4:
                         try:
                             s = row[i].lower()
                         except:

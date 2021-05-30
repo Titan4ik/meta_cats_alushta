@@ -1,8 +1,8 @@
 n_window = 30
-models_path = 'C:\\alushta\\meta_cats_alushta\\models\\'
-csvs = 'C:\\alushta\\meta_cats_alushta\\csvs\\'
-images = 'C:\\alushta\\meta_cats_alushta\\images\\'
-
+models_path = 'C:\\alushta\\meta_cats_alushta\\data\\models\\'
+csvs = 'C:\\alushta\\meta_cats_alushta\\data\\datasets\\csv\\'
+images = 'C:\\alushta\\meta_cats_alushta\\data\\plots\\'
+from pathlib import Path
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,7 +15,9 @@ from sklearn.metrics import mean_squared_error
 import datetime as dt
 from pickle import dump,load
 import os
-
+import json
+import matplotlib
+matplotlib.rcParams.update({'font.size': 22})
 def construct_df(path):
     df = pd.read_csv(path)
     if 'timestamp' not in df.columns:
@@ -69,7 +71,7 @@ def get_model(x_train,y_train,x_test,y_test):
     history = model.fit(x_train,y_train,validation_data=(x_test,y_test), epochs=1)
     return model, history
 
-def start(new_data_, df, col,st_date, end1_dt, end2_dt,day_count=10):
+def start(dataset_name, new_data_, df, col,st_date, end1_dt, end2_dt,day_count=10):
     new_data = pd.DataFrame(index=range(0,len(df)),columns=[col])
     for j, val in enumerate(new_data_[col]):
         new_data[col][j] = val
@@ -97,6 +99,7 @@ def start(new_data_, df, col,st_date, end1_dt, end2_dt,day_count=10):
     y_pred = np.reshape(y_pred, [1, -1])
 
     draw(
+        dataset_name,
         col, end1_dt, np.timedelta64(3, 'h'),
         new_data[int(df.shape[0]*0.8)-count_pred:int(df.shape[0]*0.8)][col],
         new_data[int(df.shape[0]*0.8):int(df.shape[0]*0.8)+count_pred][col],
@@ -114,15 +117,15 @@ def start(new_data_, df, col,st_date, end1_dt, end2_dt,day_count=10):
         testScore = sum(values[:in_days]) / in_days
         res.append((k, testScore))
         print(f'Diff in {col} for {k} days: {testScore}')
-    draw_info(col, res)
+    draw_info(dataset_name, col, res)
     return res
     
-def draw_info(name, values):
+def draw_info(dataset_name, name, values):
     fig, ax = plt.subplots()
 
  
 
-    lab= f"Средняя разность между факт. показателями и предикта для {name}"
+    lab= f"Размер погрешности предикта для {name} с течением времени"
     plt.title(label=lab)
     ax.set_xlabel('кол-во дней')
     ax.set_ylabel('DIFF')
@@ -135,7 +138,7 @@ def draw_info(name, values):
     # plt.show()
     fig.set_size_inches(18.5, 10.5)
     plt.savefig(os.path.join(models_path, dataset_name, f'{name}_diff.png'), dpi=100)
-def draw(name, start_dt_test,  step, train, test, predict):
+def draw(dataset_name, name, start_dt_test,  step, train, test, predict):
     fig, ax = plt.subplots()
     print(f'-----{name}-----')
     y_train = [
@@ -167,17 +170,29 @@ def draw(name, start_dt_test,  step, train, test, predict):
 
 # from tensorflow import keras
 # model = keras.models.load_model('1.model')
-def run(dataset_name, file_name):
-  new_data_, df,st_date, end1_dt, end2_dt = construct_df(csvs + file_name)
-  for i, col in enumerate(df.columns[1:]):
-      # try:
-      start(new_data_, df, col,st_date, end1_dt, end2_dt)
-      # except Exception as e:
-      #   print(f"ERROR! {e}")
+def run(dataset_name):
+    file_name = dataset_name + '.csv'
+    new_data_, df,st_date, end1_dt, end2_dt = construct_df(csvs + file_name)
+    cols = []
+    for i, col in enumerate(df.columns[1:]):
+        try:
+            start(dataset_name, new_data_, df, col,st_date, end1_dt, end2_dt)
+        except Exception as e:
+            print(f"ERROR! {e}")
+        else:
+            cols.append(col)
+    path_meta = Path(f'data/datasets/meta/{dataset_name}.meta.json')
+    path_meta.parent.mkdir(exist_ok=True)
+    with open(path_meta, 'w') as f:
+        meta = {
+            'time': dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'columns': cols,
+        }
+        f.write(json.dumps(meta))
 
-dataset_name = 'stovropol'
-file_name = '1.csv'
+# dataset_name = 'stovropol'
+# file_name = '1.csv'
 
-run(dataset_name,file_name)
+# run(dataset_name,file_name)
 
 # scaler = load(open(f'{scalers_path}/{dataset_name}/scaler_{col}.pkl', 'rb'))

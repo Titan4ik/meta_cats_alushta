@@ -8,7 +8,6 @@ def main():
     pages = [
         Page('# Обучить нейросеть ', train_app),
         Page('# Обученные модели ', train_list_app),
-        Page('# Сделать прогноз ', prophet_app)
     ]
     render_sidebar_pages(pages, session_state=session_state)
     st.sidebar.markdown('<br>', unsafe_allow_html=True)

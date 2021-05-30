@@ -108,16 +108,15 @@ def start(dataset_name, new_data_, df, col,st_date, end1_dt, end2_dt,day_count=3
 
     res = []
     values = []
-    values_t = []
+
     for x1, x2 in zip(y_pred[0],new_data[int(df.shape[0]*0.8):][col].values):
         if np.isnan(x1) or np.isnan(x2):
             continue
         values.append(abs(x1-x2))
-        values_t.append(abs(x2))
     for  k in [3,10,30,90,120,180,240, 300,360]:
         in_days = k * 8
-        testScore = (sum(values[:in_days]) / in_days) / (sum(values_t[:in_days]) / in_days)
-        res.append((k, testScore * 100))
+        testScore = sum(values[:in_days]) / in_days
+        res.append((k, testScore))
         print(f'Diff in {col} for {k} days: {testScore}')
     draw_info(dataset_name, col, res)
     return res
